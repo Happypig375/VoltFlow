@@ -1,0 +1,54 @@
+{
+  "name": "Charger",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name/label of the charger station"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "Latitude coordinate"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude coordinate"
+    },
+    "power_kw": {
+      "type": "number",
+      "description": "Charging power in kW"
+    },
+    "connector_type": {
+      "type": "string",
+      "enum": [
+        "CCS",
+        "CHAdeMO",
+        "Type2",
+        "Tesla"
+      ],
+      "description": "Connector type"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "occupied",
+        "offline"
+      ],
+      "default": "available",
+      "description": "Current status"
+    },
+    "location_description": {
+      "type": "string",
+      "description": "Short description of location"
+    }
+  },
+  "required": [
+    "name",
+    "latitude",
+    "longitude",
+    "power_kw",
+    "connector_type",
+    "status"
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "name": "ChargingSession",
+  "type": "object",
+  "properties": {
+    "charger_id": {
+      "type": "string",
+      "description": "ID of the charger used"
+    },
+    "charger_name": {
+      "type": "string",
+      "description": "Name of the charger"
+    },
+    "current_soc": {
+      "type": "number",
+      "description": "Current state of charge (%)"
+    },
+    "desired_soc": {
+      "type": "number",
+      "description": "Desired state of charge (%)"
+    },
+    "ev_type": {
+      "type": "string",
+      "description": "Type of EV"
+    },
+    "battery_size_kwh": {
+      "type": "number",
+      "description": "Battery size in kWh"
+    },
+    "selected_plan": {
+      "type": "string",
+      "enum": [
+        "eager",
+        "discount_1",
+        "discount_2"
+      ],
+      "description": "Selected charging plan"
+    },
+    "discount_percent": {
+      "type": "number",
+      "description": "Discount percentage applied"
+    },
+    "estimated_duration_hours": {
+      "type": "number",
+      "description": "Estimated charging duration in hours"
+    },
+    "estimated_cost": {
+      "type": "number",
+      "description": "Estimated cost in dollars"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "charging",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Session status"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "unpaid",
+        "paid"
+      ],
+      "default": "unpaid",
+      "description": "Payment status"
+    }
+  },
+  "required": [
+    "charger_id",
+    "current_soc",
+    "desired_soc"
+  ]
+}
