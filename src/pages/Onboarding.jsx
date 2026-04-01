@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ const EV_MODELS = [
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -44,7 +45,7 @@ export default function Onboarding() {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
+    await updateUser({
       ...form,
       ev_battery_size_kwh: Number(form.ev_battery_size_kwh),
       onboarding_complete: true,

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { createSession } from '@/api/entities/chargingSession';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,16 +28,12 @@ export default function Payment() {
   const duration = urlParams.get('duration');
   const cost = urlParams.get('cost');
 
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
-
-  useEffect(() => {
-    base44.auth.me().then(setUser);
-  }, []);
 
   const planInfo = planLabels[plan] || planLabels.eager;
   const PlanIcon = planInfo.icon;
@@ -59,7 +56,7 @@ export default function Payment() {
     await new Promise(r => setTimeout(r, 1500));
 
     // Create charging session record
-    await base44.entities.ChargingSession.create({
+    await createSession({
       charger_id: chargerId,
       current_soc: Number(currentSoc),
       desired_soc: Number(desiredSoc),

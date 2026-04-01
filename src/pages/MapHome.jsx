@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { listChargers } from '@/api/entities/charger';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import ChargerMarker from '@/components/charging/ChargerMarker';
 import MapLegend from '@/components/charging/MapLegend';
@@ -11,19 +13,16 @@ import 'leaflet/dist/leaflet.css';
 
 export default function MapHome() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      if (!u.onboarding_complete) navigate('/onboarding');
-    });
-  }, [navigate]);
+    if (user && !user.onboarding_complete) navigate('/onboarding');
+  }, [user, navigate]);
 
   const { data: chargers = [], isLoading } = useQuery({
     queryKey: ['chargers'],
-    queryFn: () => base44.entities.Charger.list(),
+    queryFn: listChargers,
   });
 
   const filteredChargers = chargers.filter(c =>

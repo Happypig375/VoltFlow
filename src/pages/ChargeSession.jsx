@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { listChargers } from '@/api/entities/charger';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,10 +62,10 @@ function computeDiscountPlans(currentSoc, desiredSoc, batteryKwh, chargerPowerKw
 
 export default function ChargeSession() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const chargerId = urlParams.get('chargerId');
 
-  const [user, setUser] = useState(null);
   const [currentSoc, setCurrentSoc] = useState(30);
   const [desiredSoc, setDesiredSoc] = useState(80);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -73,13 +74,9 @@ export default function ChargeSession() {
   const [computing, setComputing] = useState(false);
   const [plans, setPlans] = useState([]);
 
-  useEffect(() => {
-    base44.auth.me().then(setUser);
-  }, []);
-
   const { data: chargers = [] } = useQuery({
     queryKey: ['chargers'],
-    queryFn: () => base44.entities.Charger.list(),
+    queryFn: listChargers,
   });
 
   const availableChargers = chargers.filter(c => c.status === 'available');

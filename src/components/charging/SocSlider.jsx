@@ -1,5 +1,4 @@
 import { Slider } from '@/components/ui/slider';
-import { Battery, BatteryFull } from 'lucide-react';
 
 export default function SocSlider({ label, value, onChange, icon: Icon }) {
   const getColor = (val) => {

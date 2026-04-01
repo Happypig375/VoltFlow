@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,8 @@ import { motion } from 'framer-motion';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { user, logout, updateUser } = useAuth();
   const { toast } = useToast();
-  const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     staff_id: '',
@@ -22,20 +22,19 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
+    if (user) {
       setForm({
-        staff_id: u.staff_id || '',
-        ev_type: u.ev_type || '',
-        ev_battery_size_kwh: u.ev_battery_size_kwh || '',
-        connector_preference: u.connector_preference || '',
+        staff_id: user.staff_id || '',
+        ev_type: user.ev_type || '',
+        ev_battery_size_kwh: user.ev_battery_size_kwh || '',
+        connector_preference: user.connector_preference || '',
       });
-    });
-  }, []);
+    }
+  }, [user]);
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
+    await updateUser({
       ...form,
       ev_battery_size_kwh: Number(form.ev_battery_size_kwh),
     });
@@ -44,7 +43,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    base44.auth.logout();
+    logout().then(() => navigate('/login', { replace: true }));
   };
 
   if (!user) {

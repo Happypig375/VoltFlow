@@ -1,12 +1,13 @@
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import AppLayout from './components/layout/AppLayout';
+import Login from './pages/Login';
 import MapHome from './pages/MapHome';
 import Onboarding from './pages/Onboarding';
 import ChargeSession from './pages/ChargeSession';
@@ -15,9 +16,17 @@ import Sessions from './pages/Sessions';
 import Profile from './pages/Profile';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  useEffect(() => {
+    if (!isLoadingAuth && !isAuthenticated && location.pathname !== '/login') {
+      navigate('/login', { replace: true });
+    }
+  }, [isLoadingAuth, isAuthenticated, location.pathname, navigate]);
+
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -25,17 +34,9 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
-  }
-
   return (
     <Routes>
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/payment" element={<Payment />} />
       <Route element={<AppLayout />}>
@@ -59,7 +60,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

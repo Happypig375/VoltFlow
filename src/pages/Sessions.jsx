@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { getUserSessions } from '@/api/entities/chargingSession';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Clock, Battery, ChevronRight } from 'lucide-react';
+import { Zap, Clock, Battery } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 
@@ -20,15 +20,11 @@ const planNames = {
 };
 
 export default function Sessions() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser);
-  }, []);
+  const { user } = useAuth();
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['sessions', user?.email],
-    queryFn: () => base44.entities.ChargingSession.filter({ created_by: user.email }, '-created_date'),
+    queryFn: () => getUserSessions(user.email),
     enabled: !!user,
   });
 
