@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { listChargers } from '@/api/entities/charger';
@@ -80,7 +80,32 @@ export default function ChargeSession() {
   });
 
   const availableChargers = chargers.filter(c => c.status === 'available');
-  const selectedCharger = chargers.find(c => String(c.id) === String(selectedChargerId));
+  const selectedCharger = chargers.find(c =>
+    String(c.id) === String(selectedChargerId) ||
+    String(c.name) === String(selectedChargerId)
+  );
+
+  useEffect(() => {
+    if (!chargerId) {
+      navigate('/', { replace: true });
+    }
+  }, [chargerId, navigate]);
+
+  useEffect(() => {
+    if (!selectedChargerId || !chargers.length || !selectedCharger) return;
+
+    if (String(selectedCharger.id) !== String(selectedChargerId)) {
+      setSelectedChargerId(String(selectedCharger.id));
+    }
+  }, [chargers, selectedCharger, selectedChargerId]);
+
+  useEffect(() => {
+    if (!chargerId || !chargers.length) return;
+
+    if (!selectedCharger) {
+      navigate('/', { replace: true });
+    }
+  }, [chargerId, chargers.length, navigate, selectedCharger]);
 
   const handleComputePlans = async () => {
     if (!selectedCharger || !user) return;

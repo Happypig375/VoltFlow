@@ -1,3 +1,24 @@
+export const chargerStatusMeta = {
+  available: {
+    label: 'Available',
+    markerColor: '#16a34a',
+    chipClassName: 'border-green-200 bg-green-50 text-green-700',
+    dotClassName: 'bg-green-500',
+  },
+  occupied: {
+    label: 'Occupied',
+    markerColor: '#dc2626',
+    chipClassName: 'border-red-200 bg-red-50 text-red-700',
+    dotClassName: 'bg-red-500',
+  },
+  offline: {
+    label: 'Offline',
+    markerColor: '#64748b',
+    chipClassName: 'border-slate-200 bg-slate-100 text-slate-600',
+    dotClassName: 'bg-slate-400',
+  },
+};
+
 export default function MapLegend() {
   const items = [
     { color: 'bg-green-500', label: 'Available' },
