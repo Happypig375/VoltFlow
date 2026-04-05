@@ -178,6 +178,117 @@ function normalizeChargerKey(value) {
 }
 
 /**
+ * @param {string} chargerId
+ */
+function getChargerPrefix(chargerId) {
+  const value = String(chargerId || '').trim();
+  if (!value) return 'Other';
+
+  const [prefix] = value.split('-');
+  return prefix || 'Other';
+}
+
+/**
+ * @param {Array<{ id: string, status: 'available' | 'occupied' | 'offline', record: any }>} chargers
+ */
+function groupChargersByPrefix(chargers) {
+  return chargers.reduce((groups, charger) => {
+    const prefix = getChargerPrefix(charger.id);
+    const currentGroup = groups[groups.length - 1];
+
+    if (currentGroup && currentGroup.prefix === prefix) {
+      currentGroup.chargers.push(charger);
+      return groups;
+    }
+
+    groups.push({
+      prefix,
+      chargers: [charger],
+    });
+
+    return groups;
+  }, []);
+}
+
+/**
+ * @param {string} chargerId
+ */
+function estimateChargerChipWidth(chargerId) {
+  const minWidth = 56;
+  const maxWidth = 120;
+  const estimated = 26 + String(chargerId || '').length * 7;
+
+  return Math.max(minWidth, Math.min(maxWidth, estimated));
+}
+
+/**
+ * @param {Array<{ id: string }>} chargers
+ * @param {number} availableWidth
+ */
+function estimateChipRows(chargers, availableWidth) {
+  if (!chargers.length || availableWidth <= 0) return 1;
+
+  const chipGap = 6;
+  let rows = 1;
+  let rowWidth = 0;
+
+  chargers.forEach((charger) => {
+    const chipWidth = estimateChargerChipWidth(charger.id);
+    const nextWidth = rowWidth === 0 ? chipWidth : rowWidth + chipGap + chipWidth;
+
+    if (nextWidth > availableWidth) {
+      rows += 1;
+      rowWidth = chipWidth;
+      return;
+    }
+
+    rowWidth = nextWidth;
+  });
+
+  return rows;
+}
+
+/**
+ * @param {Array<{ chargers: Array<{ id: string }> }>} locations
+ * @param {import('leaflet').Map} map
+ */
+function getLargestPopupEstimate(locations, map) {
+  const mapWidth = map.getContainer().clientWidth;
+  const popupWidth = Math.max(220, Math.min(280, mapWidth - 32));
+  const usableChipWidth = Math.max(160, popupWidth - 24);
+
+  let maxPopupHeight = 180;
+
+  locations.forEach((location) => {
+    const groups = groupChargersByPrefix(location.chargers);
+    const baseHeight = 62;
+    const chipsTopMargin = 12;
+    const chipRowHeight = 24;
+    const chipRowGap = 6;
+    const interGroupGap = 8;
+    const separatorHeight = 9;
+    const popupVerticalPadding = 16;
+
+    const chipsHeight = groups.reduce((height, group, index) => {
+      const rows = estimateChipRows(group.chargers, usableChipWidth);
+      const groupRowsHeight = rows * chipRowHeight + (rows - 1) * chipRowGap;
+      const separatorSpace = index === 0 ? 0 : separatorHeight;
+      const groupGap = index === groups.length - 1 ? 0 : interGroupGap;
+
+      return height + separatorSpace + groupRowsHeight + groupGap;
+    }, 0);
+
+    const estimatedPopupHeight = baseHeight + chipsTopMargin + chipsHeight + popupVerticalPadding;
+    maxPopupHeight = Math.max(maxPopupHeight, estimatedPopupHeight);
+  });
+
+  return {
+    popupWidth,
+    popupHeight: Math.ceil(maxPopupHeight),
+  };
+}
+
+/**
  * @param {typeof chargerLocations} locations
  * @param {number} [paddingFactor=0]
  * @returns {[[number, number], [number, number]]}
@@ -276,11 +387,20 @@ function MapViewportController({ locations, areaBounds, onPopupVisibilityChange 
       const zoomPadding = L.point(40, 164);
       const areaBoundsLiteral = L.latLngBounds(areaBounds);
       const computedMinZoom = Math.max(map.getBoundsZoom(areaBoundsLiteral, false, zoomPadding) - 1, 14);
+      const { popupWidth, popupHeight } = getLargestPopupEstimate(locations, map);
+
+      const dynamicPadding = {
+        top: Math.ceil(viewportPadding.topLeft[1] + popupHeight + 24),
+        right: Math.ceil(popupWidth / 2 + 36),
+        bottom: Math.ceil(viewportPadding.bottomRight[1] + Math.max(120, popupHeight * 0.35)),
+        left: Math.ceil(popupWidth / 2 + 36),
+      };
+
       const computedMaxBounds = getPixelExpandedBounds(map, areaBounds, {
-        top: 450,
-        right: 80,
-        bottom: 280,
-        left: 80,
+        top: dynamicPadding.top,
+        right: dynamicPadding.right,
+        bottom: dynamicPadding.bottom,
+        left: dynamicPadding.left,
       });
 
       map.setMinZoom(computedMinZoom);
@@ -312,7 +432,7 @@ function MapViewportController({ locations, areaBounds, onPopupVisibilityChange 
       map.off('popupopen', handlePopupOpen);
       map.off('popupclose', handlePopupClose);
     };
-  }, [areaBounds, map, onPopupVisibilityChange]);
+  }, [areaBounds, locations, map, onPopupVisibilityChange]);
 
   useEffect(() => {
     if (!locations.length) return;
@@ -497,24 +617,31 @@ export default function MapHome() {
                   <p className="text-xs text-slate-500 mt-0.5">
                     {location.chargers.length} smart charger{location.chargers.length === 1 ? '' : 's'}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {location.chargers.map((charger) => (
-                      <button
-                        key={charger.id}
-                        type="button"
-                        onClick={() => charger.status === 'available' && handleSelectCharger(charger.id)}
-                        disabled={charger.status !== 'available'}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium transition-colors',
-                          chargerStatusMeta[charger.status].chipClassName,
-                          charger.status === 'available'
-                            ? 'hover:border-primary hover:bg-primary hover:text-primary-foreground'
-                            : 'cursor-not-allowed opacity-80'
-                        )}
-                      >
-                        <span className={cn('h-2 w-2 rounded-full', chargerStatusMeta[charger.status].dotClassName)} />
-                        <span>{charger.id}</span>
-                      </button>
+                  <div className="mt-3 space-y-2">
+                    {groupChargersByPrefix(location.chargers).map((group, groupIndex) => (
+                      <div key={`${location.id}-${group.prefix}-${groupIndex}`}>
+                        {groupIndex > 0 && <div className="mb-2 border-t border-border/70" />}
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.chargers.map((charger) => (
+                            <button
+                              key={charger.id}
+                              type="button"
+                              onClick={() => charger.status === 'available' && handleSelectCharger(charger.id)}
+                              disabled={charger.status !== 'available'}
+                              className={cn(
+                                'inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium transition-colors',
+                                chargerStatusMeta[charger.status].chipClassName,
+                                charger.status === 'available'
+                                  ? 'hover:border-primary hover:bg-primary hover:text-primary-foreground'
+                                  : 'cursor-not-allowed opacity-80'
+                              )}
+                            >
+                              <span className={cn('h-2 w-2 rounded-full', chargerStatusMeta[charger.status].dotClassName)} />
+                              <span>{charger.id}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
